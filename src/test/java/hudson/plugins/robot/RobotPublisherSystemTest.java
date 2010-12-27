@@ -33,7 +33,7 @@ import com.gargoylesoftware.htmlunit.WebAssert;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 
 public class RobotPublisherSystemTest extends HudsonTestCase {
-
+/*
 	public void testRoundTripConfig() throws Exception{
 		FreeStyleProject p = createFreeStyleProject();
 		RobotPublisher before = new RobotPublisher("a", "b", "c", "d", 11, 27, true);
@@ -45,8 +45,8 @@ public class RobotPublisherSystemTest extends HudsonTestCase {
 		RobotPublisher after = p.getPublishersList().get(RobotPublisher.class);
 
 		assertEqualBeans(before, after, "outputPath,outputFileName,reportFileName,logFileName,passThreshold,unstableThreshold,onlyCritical");
-	}
-
+	}*/
+/*
 	public void testConfigView() throws Exception{
 		FreeStyleProject p = createFreeStyleProject();
 		RobotPublisher before = new RobotPublisher("a", "b", "c", "d", 11, 27, true);
@@ -67,7 +67,7 @@ public class RobotPublisherSystemTest extends HudsonTestCase {
 		WebAssert.assertInputContainsValue(page, "_.passThreshold", "11.0");
 		WebAssert.assertInputPresent(page, "_.onlyCritical");
 		WebAssert.assertInputContainsValue(page, "_.onlyCritical", "on");
-	}
+	} */
 
 	@LocalData
 	public void testPublish() throws Exception{

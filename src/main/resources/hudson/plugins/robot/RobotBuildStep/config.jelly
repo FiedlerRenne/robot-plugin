@@ -1,0 +1,92 @@
+<!--
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ -->
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <f:entry>
+    <table width="100%">
+        <tr><f:entry title="${%Robot File}" field="robotFile">
+                <f:textbox />
+            </f:entry>
+        </tr>
+    </table>
+    <table width="100%">
+        <tr><b>Output Options</b></tr>
+        <tr>
+            <f:entry title="${%Output directory}" field="outputDir">
+                <f:textbox />
+            </f:entry>
+        </tr>
+        <tr>
+            <f:optionalBlock name="saveSummary" title="Save summary" default="false"  checked="${instance.saveSummary}">
+                <f:entry title="${% Filename}" field="summaryFile" >
+                    <f:textbox />
+                </f:entry>
+            </f:optionalBlock>
+        </tr>
+                <tr>
+            <f:optionalBlock name="saveDebug" title="Save debug" default="false" checked="${instance.saveDebug}" >
+                <f:entry title="${% Filename}" field="debugFile" >
+                    <f:textbox />
+                </f:entry>
+            </f:optionalBlock>
+        </tr>
+    </table>
+
+    <f:advanced>
+        <f:entry>
+            <table width="100%">
+                <tr><b>Run/Tag Testsuites/Testcases</b></tr>
+                <tr>
+                    <f:entry title="${%Set tag}" field="setTags">
+                        <f:textbox />
+                    </f:entry>
+                </tr>
+                <tr>
+                    <f:entry title="${%Run testcases by name}" field="runTestCasesByName">
+                        <f:textbox />
+                    </f:entry>
+                </tr>
+                <tr>
+                    <f:entry title="${%Run testcases by tag}" field="runTestCasesByTag">
+                        <f:textbox />
+                    </f:entry>
+                </tr>
+                <tr>
+                    <f:entry title="${%Exclude testcases by tag}" field="excludeTestCasesByTag">
+                        <f:textbox />
+                    </f:entry>
+                </tr>
+                <tr>
+                    <f:entry title="${%Noncritical testcases}" field="nonCriticalTestCasesByTag">
+                        <f:textbox />
+                    </f:entry>
+                </tr>
+            </table>
+            <table width="100%">
+                <tr><b>Additional Options</b></tr>
+                <tr>
+                    <f:entry title="${%File with variables}" field="variableFile">
+                        <f:textbox />
+                    </f:entry>
+                </tr>
+                <tr>
+                    <f:entry title="${%Argument file}" field="argumentFile">
+                        <f:textbox />
+                    </f:entry>
+                </tr>
+            </table>
+        </f:entry>
+    </f:advanced>
+    </f:entry>
+</j:jelly>
