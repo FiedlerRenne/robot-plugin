@@ -19,6 +19,7 @@ import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.Descriptor;
 import hudson.model.Hudson;
+import hudson.model.Project;
 import hudson.model.TaskListener;
 import hudson.tasks.Builder;
 import hudson.tasks.CommandInterpreter;
@@ -32,7 +33,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.servlet.ServletException;
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
+import org.kohsuke.stapler.Stapler;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.export.Exported;
 
@@ -64,9 +68,9 @@ public class RobotBuildStep extends CommandInterpreter {
     private static final Logger logger = Logger.getLogger(RobotBuildStep.class.getName());
     //test whether String is a beginning of a path ( absolute and relative)
     private static String pathPattern = "((\\.{2})|" + //  test  ".."
-                                        "/|" + //  test: "/"
-                                        "([a-zA-Z]:\\\\)|" + //  test: "X:\"
-                                        "(\\\\\\\\))";//  test: "\\"
+            "/|" + //  test: "/"
+            "([a-zA-Z]:\\\\)|" + //  test: "X:\"
+            "(\\\\{2}))";//  test: "\\"
     private static String debugFilePatternPybot = "^Debug:\\s{1,}";
     private static String outputFilePatternPybot = "^Output:\\s{1,}";
     private static String summaryFilePatternPybot = "Summary:\\s{1,}";
@@ -391,9 +395,10 @@ public class RobotBuildStep extends CommandInterpreter {
         //quit if pybot was not called on the command line
         if (pybot_execution == false) {
             logger.log(Level.INFO, "pybot was not executed for Build with Log:{0}",
-                    file.getAbsolutePath());
+                       file.getAbsolutePath());
             return null;
         }
+
         String match = null;
         /**
          * the variable part of the pattern is the beginning of the line.
@@ -416,6 +421,7 @@ public class RobotBuildStep extends CommandInterpreter {
         if (new File(path).isFile()) {
             return new File(path);
         }
+
         return null;
 
     }
@@ -603,95 +609,108 @@ public class RobotBuildStep extends CommandInterpreter {
 
         /**
          * Build a RobotBuildStep from the submitted Form and return it.
-         * In case several Robot-BuildSteps were created, it always gives back
-         * the first RobotBuildStep, so only ONE RobotBuildStep can exist per project/job.
          * @param req
          * @param formData
          * @return
          */
         @Override
         public Builder newInstance(StaplerRequest req, JSONObject formData) {
+
+            if (false) {
+                /**
+                 * Several attempts of try to get hudson to only accept one
+                 * RobotBuildStep per job ( because severak BuildSteps would mean
+                 * to adjust statistics to handle several and the getXXXFromLog
+                 * to savely return a List of Files.
+                 *
+                 * Problem is that anything which is returned will either be thrown
+                 * or is accepted.
+                 * Hudson accepts null and  the same BuildStep ( two references
+                 * of the same object and two equal objects ) several times as
+                 * different Buildsteps.
+                 * So how to get hudson to decline a BuildStep ?
+                 *
+                 * Should it be possible to do this or not ?
+                 * Consultation with author (Janne Piironen) necessary
+                 *
+                 */
+                RobotBuildStep thisStep = makeRobotBuildStep(formData);
+                Object builders;
+                try {
+                    builders = Stapler.getCurrentRequest().getSubmittedForm().get("builder");
+                } catch (ServletException ex) {
+                    logger.log(Level.SEVERE, "Submitted Form does not contain builder, but this"
+                                             + "Build-Step got invoked - return null");
+                    return null;
+                }
+                if (builders instanceof JSONObject) {
+                    return thisStep;
+                }
+                if (!(builders instanceof JSONArray)) {
+                    return null;
+                }
+                JSONArray builderFormList = (JSONArray) builders;
+                for(int i = 0;i< builderFormList.size();i++) {
+                if(builderFormList.getJSONObject(i).containsKey("robotFile"))   {
+                if(formData.equals(builderFormList.getJSONObject(i)))   {
+                return thisStep;
+                }
+                else return null;
+                }
+                }
+                //return thisStep;
+
+                int count = 0;
+                int firstRobotindex = -1;
+
+                for (int i = 0; i < builderFormList.size(); i++) {
+                if (builderFormList.getJSONObject(i).containsKey("robotFile")) {
+                firstRobotindex = i;
+                break;
+                }
+                }
+                if(firstRobotindex == -1) return null;
+                RobotBuildStep firstFormStep = makeRobotBuildStep(builderFormList.getJSONObject(firstRobotindex));
+                if(firstFormStep.equals(thisStep)) return thisStep;
+                //else return null;
+
+
+                else {
+                //int count = 0;
+                //int firstRobotindex = -1;
+
+                for (int i = 0; i < builderFormList.size(); i++) {
+                if (builderFormList.getJSONObject(i).containsKey("robotFile")) {
+
+                firstRobotindex = i;
+                count++;
+                if(count > 1)   {
+                i = builderFormList.size();
+                }
+                }
+                }
+
+                String jobname = Stapler.getCurrentRequest().getParameter("name");
+                List<Project> projects = Hudson.getInstance().getProjects();
+                RobotBuildStep firstBuildStep = makeRobotBuildStep(builderFormList.getJSONObject(firstRobotindex));
+                for( Project project : projects)    {
+                if(jobname.trim().equals(project.getName().trim())) {
+                if(!project.getBuilders().contains(firstBuildStep))return firstBuildStep;
+                else    {
+                List<Builder> builds = project.getBuilders();
+                for(Builder build : builds) {
+                if(firstBuildStep.equals(build))return build;
+                }
+                }
+
+                break;
+                }
+                }
+                return null;
+
+                }
+            }
             return makeRobotBuildStep(formData);
-            /*RobotBuildStep thisStep = makeRobotBuildStep(formData);
-            Object builders;
-            try {
-            builders = Stapler.getCurrentRequest().getSubmittedForm().get("builder");
-            } catch (ServletException ex) {
-            logger.log(Level.SEVERE, "Submitted Form does not contain builder, but this"
-            + "Build-Step got invoked - return null");
-            return null;
-            }
-            if(builders instanceof JSONObject) return thisStep;
-            if(! (builders instanceof JSONArray)) return null;
-            JSONArray builderFormList = (JSONArray) builders;*/
-            /**
-             * in case job contains of several Build-Steps or severel RobotBuildSteps,
-             * find the first RobotBuildStep in the whole submitted form, build it and return it.
-             * Either it is the only one and it will be "updated" or the form consists 
-             * of several RobotBuildSteps, in this case the first from the submitted form
-             * already exists in the List<Builder> and the Collection will not add it,
-             * because RobotBuildStep.equalsTo() returns true.  
-             */
-            /*for(int i = 0;i< builderFormList.size();i++) {
-            if(builderFormList.getJSONObject(i).containsKey("robotFile"))   {
-            if(formData.equals(builderFormList.getJSONObject(i)))   {
-            return thisStep;
-            }
-            else return null;
-            }
-            }
-            return thisStep;*/
-            /*
-            int count = 0;
-            int firstRobotindex = -1;
-
-            for (int i = 0; i < builderFormList.size(); i++) {
-            if (builderFormList.getJSONObject(i).containsKey("robotFile")) {
-            firstRobotindex = i;
-            break;
-            }
-            }
-            if(firstRobotindex == -1) return null;
-            RobotBuildStep firstFormStep = makeRobotBuildStep(builderFormList.getJSONObject(firstRobotindex));
-            if(firstFormStep.equals(thisStep)) return thisStep;
-            else return null;
-
-             */
-            /*
-            else {
-            int count = 0;
-            int firstRobotindex = -1;
-
-            for (int i = 0; i < builderFormList.size(); i++) {
-            if (builderFormList.getJSONObject(i).containsKey("robotFile")) {
-
-            firstRobotindex = i;
-            count++;
-            if(count > 1)   {
-            i = builderFormList.size();
-            }
-            }
-            }
-
-            String jobname = Stapler.getCurrentRequest().getParameter("name");
-            List<Project> projects = Hudson.getInstance().getProjects();
-            RobotBuildStep firstBuildStep = makeRobotBuildStep(builderFormList.getJSONObject(firstRobotindex));
-            for( Project project : projects)    {
-            if(jobname.trim().equals(project.getName().trim())) {
-            if(!project.getBuilders().contains(firstBuildStep))return firstBuildStep;
-            else    {
-            List<Builder> builds = project.getBuilders();
-            for(Builder build : builds) {
-            if(firstBuildStep.equals(build))return build;
-            }
-            }
-
-            break;
-            }
-            }
-            return null;
-
-            }*/
         }
     }
 
